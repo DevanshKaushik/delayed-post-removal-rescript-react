@@ -11,9 +11,18 @@ type action =
 
 let reducer = (state, action) =>
   switch action {
-  | DeleteLater(post, timeoutId) => state
-  | DeleteAbort(post) => state
-  | DeleteNow(post) => state
+  | DeleteLater(post, timeoutId) => {
+      ...state,
+      forDeletion: state.forDeletion->Map.String.set(post->Post.id, timeoutId),
+    }
+  | DeleteAbort(post) => {
+      ...state,
+      forDeletion: Map.String.remove(state.forDeletion, post->Post.id),
+    }
+  | DeleteNow(post) => {
+      posts: state.posts->Js.Array2.filter(x => x->Post.id != post->Post.id),
+      forDeletion: Map.String.remove(state.forDeletion, post->Post.id),
+    }
   }
 
 let initialState = {posts: Post.examples, forDeletion: Map.String.empty}
@@ -22,5 +31,33 @@ let initialState = {posts: Post.examples, forDeletion: Map.String.empty}
 let make = () => {
   let (state, dispatch) = React.useReducer(reducer, initialState)
 
-  <div className="max-w-3xl mx-auto mt-8 relative"> <p> {s("Container for posts!")} </p> </div>
+  let clearTimeout = (post: Post.t) => {
+    switch Map.String.get(state.forDeletion, post->Post.id) {
+    | Some(timeoutId) => Js.Global.clearTimeout(timeoutId)
+    | None => Js.log("ERROR: Unable to clear timeout")
+    }
+  }
+
+  let posts = state.posts->Belt.Array.map(post => {
+    if Map.String.has(state.forDeletion, post->Post.id) {
+      let restoreHandler = _mouseEvent => {
+        post->clearTimeout
+        dispatch(DeleteAbort(post))
+      }
+
+      let deleteHandler = _mouseEvent => {
+        post->clearTimeout
+        dispatch(DeleteNow(post))
+      }
+
+      <DeletePostView post key={post->Post.id} restoreHandler deleteHandler />
+    } else {
+      let removeHandler = _mouseEvent => {
+        dispatch(DeleteLater(post, Js.Global.setTimeout(() => dispatch(DeleteNow(post)), 10000)))
+      }
+
+      <PostView post key={post->Post.id} removeHandler />
+    }
+  })
+  <div className="max-w-3xl mt-10 mx-auto"> {posts->React.array} </div>
 }
