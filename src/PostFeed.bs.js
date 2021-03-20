@@ -79,15 +79,16 @@ function PostFeed(Props) {
                       });
           }
           var removeHandler = function (_mouseEvent) {
+            var timeoutId = setTimeout((function (param) {
+                    return Curry._1(dispatch, {
+                                TAG: /* DeleteNow */2,
+                                _0: post
+                              });
+                  }), 10000);
             return Curry._1(dispatch, {
                         TAG: /* DeleteLater */0,
                         _0: post,
-                        _1: setTimeout((function (param) {
-                                return Curry._1(dispatch, {
-                                            TAG: /* DeleteNow */2,
-                                            _0: post
-                                          });
-                              }), 10000)
+                        _1: timeoutId
                       });
           };
           return React.createElement(PostView.make, {

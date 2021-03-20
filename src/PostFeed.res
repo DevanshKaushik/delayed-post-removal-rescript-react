@@ -17,11 +17,11 @@ let reducer = (state, action) =>
     }
   | DeleteAbort(post) => {
       ...state,
-      forDeletion: Map.String.remove(state.forDeletion, post->Post.id),
+      forDeletion: state.forDeletion->Map.String.remove(post->Post.id),
     }
   | DeleteNow(post) => {
       posts: state.posts->Js.Array2.filter(x => x->Post.id != post->Post.id),
-      forDeletion: Map.String.remove(state.forDeletion, post->Post.id),
+      forDeletion: state.forDeletion->Map.String.remove(post->Post.id),
     }
   }
 
@@ -53,7 +53,8 @@ let make = () => {
       <DeletePostView post key={post->Post.id} restoreHandler deleteHandler />
     } else {
       let removeHandler = _mouseEvent => {
-        dispatch(DeleteLater(post, Js.Global.setTimeout(() => dispatch(DeleteNow(post)), 10000)))
+        let timeoutId = Js.Global.setTimeout(() => dispatch(DeleteNow(post)), 10000)
+        dispatch(DeleteLater(post, timeoutId))
       }
 
       <PostView post key={post->Post.id} removeHandler />
